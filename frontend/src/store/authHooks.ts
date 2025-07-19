@@ -5,6 +5,7 @@
 import { useCallback } from 'react';
 import { useAuth, useAuthActions, useAuthStore, initializeAuthStore } from './authStore';
 import { authAPI, getErrorMessage } from '../services';
+import { setToken, removeToken } from '../services/api';
 import type { LoginData, RegisterData } from '../services';
 
 // =====================================================
@@ -27,7 +28,10 @@ export const useAuthAPI = () => {
       
       const response = await authAPI.login(credentials);
       
-      // Sucesso: atualizar store - acessar dados da resposta
+      // Sucesso: primeiro definir token no axios
+      setToken(response.data.data.token);
+      
+      // Depois atualizar store
       login(response.data.data.token, response.data.data.user);
       
       console.log('✅ Login bem-sucedido:', { 
@@ -104,7 +108,8 @@ export const useAuthAPI = () => {
       console.error('⚠️ Erro no logout via API (prosseguindo com logout local):', error);
     } finally {
       // Sempre fazer logout local, mesmo se a API falhar
-      logout();
+      removeToken(); // Remove token do axios
+      logout(); // Remove do store
       setLoading(false);
       
       console.log('✅ Logout local concluído');

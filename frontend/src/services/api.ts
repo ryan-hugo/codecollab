@@ -10,7 +10,7 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Token management utilities
+// Token management utilities - use same keys as authStore
 const TOKEN_KEY = 'codecollab_token';
 
 export const getToken = (): string | null => {
@@ -39,7 +39,7 @@ api.interceptors.request.use(
     // Log request for development (remove in production)
     if (import.meta.env.DEV) {
       console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
-        headers: config.headers,
+        headers: config.headers.Authorization ? { Authorization: '***' } : {},
         data: config.data
       });
     }

@@ -26,32 +26,57 @@ const LoginPage = () => {
 
   // Redirecionar se já estiver logado
   useEffect(() => {
+    console.log("🔍 LoginPage: Verificando estado de autenticação...", {
+      isAuthenticated,
+      locationFrom: location.state?.from,
+    });
+
     if (isAuthenticated) {
       const from = location.state?.from || "/dashboard";
-      console.log("Usuário já está logado, redirecionando para:", from);
+      console.log("✅ Usuário já está logado, redirecionando para:", from);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, location]);
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log("🔐 Iniciando processo de login...", { email: data.email });
+
     try {
       const result = await loginWithAPI({
         email: data.email,
         password: data.password,
       });
 
+      console.log("📤 Resultado do loginWithAPI:", result);
+
       if (result.success) {
-        console.log("Login realizado com sucesso!", result.user);
+        console.log("✅ Login realizado com sucesso!", result.user);
+        console.log(
+          "🔑 Token recebido:",
+          result.token ? "Token presente" : "Token ausente"
+        );
+        console.log("👤 Dados do usuário:", result.user);
+
+        // Verificar se o estado foi atualizado
+        setTimeout(() => {
+          const { isAuthenticated: authStatus } = useAuth();
+          console.log("🔍 Estado de autenticação após login:", {
+            isAuthenticated: authStatus,
+          });
+        }, 100);
+
         // Redirecionar para a página original ou dashboard
         const from = location.state?.from || "/dashboard";
+        console.log("🔄 Redirecionando para:", from);
         navigate(from, { replace: true });
       } else {
+        console.error("❌ Falha no login:", result.error);
         setError("root", {
           message: result.error || "Erro no login",
         });
       }
     } catch (err) {
-      console.error("Erro inesperado:", err);
+      console.error("💥 Erro inesperado durante login:", err);
       setError("root", {
         message: "Erro inesperado. Tente novamente.",
       });
