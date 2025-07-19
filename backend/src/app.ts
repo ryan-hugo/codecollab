@@ -1,6 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import { config } from './config';
+import authRoutes from './routes/authRoutes';
+import snippetRoutes from './routes/snippetRoutes';
+import userRoutes from './routes/userRoutes';
+import { initializePassport } from './middlewares/authMiddleware';
 
 const app = express();
 
@@ -16,6 +20,9 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Initialize Passport
+app.use(initializePassport());
+
 // Basic health check endpoint
 app.get('/', (req, res) => {
   res.json({ 
@@ -25,10 +32,13 @@ app.get('/', (req, res) => {
   });
 });
 
-// API routes will be added here
-// app.use('/api/auth', authRoutes);
-// app.use('/api/snippets', snippetRoutes);
-// app.use('/api/users', userRoutes);
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/snippets', snippetRoutes);
+app.use('/api/users', userRoutes);
+
+// Future API routes will be added here
+// app.use('/api/reviews', reviewRoutes);
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
