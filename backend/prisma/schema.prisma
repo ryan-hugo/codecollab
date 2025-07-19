@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - represents registered users
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String   // Hashed password
+  firstName String?
+  lastName  String?
+  avatar    String?  // URL to avatar image
+  bio       String?  
+  points    Int      @default(0)
+  level     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  snippets         Snippet[]
+  reviews          Review[]
+  pointTransactions PointTransaction[]
+  userBadges       UserBadge[]
+  
+  // Indexes
+  @@map("users")
+}
+
+// Snippet model - represents code snippets shared by users
+model Snippet {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  content     String   // The actual code content
+  language    String   // Programming language (e.g., 'javascript', 'python')
+  tags        String[] // Array of tags for categorization
+  isPublic    Boolean  @default(true)
+  views       Int      @default(0)
+  likes       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Foreign keys
+  authorId    String
+  
+  // Relations
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reviews     Review[]
+  
+  // Indexes
+  @@index([authorId])
+  @@index([language])
+  @@index([isPublic])
+  @@index([createdAt])
+  @@map("snippets")
+}
+
+// Review model - represents reviews/comments on snippets
+model Review {
+  id        String   @id @default(cuid())
+  content   String
+  rating    Int      @default(0) // 1-5 star rating system
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Foreign keys
+  snippetId String
+  reviewerId String
+  
+  // Relations
+  snippet   Snippet @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  reviewer  User    @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  
+  // Unique constraint - one review per user per snippet
+  @@unique([snippetId, reviewerId])
+  @@index([snippetId])
+  @@index([reviewerId])
+  @@map("reviews")
+}
+
+// PointTransaction model - tracks point earning/spending history
+model PointTransaction {
+  id          String            @id @default(cuid())
+  amount      Int               // Positive for earning, negative for spending
+  reason      String            // Description of why points were awarded/spent
+  type        TransactionType
+  createdAt   DateTime          @default(now())
+  
+  // Foreign keys
+  userId      String
+  
+  // Relations
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+  @@index([createdAt])
+  @@map("point_transactions")
+}
+
+// Badge model - represents different achievements/badges
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  iconUrl     String?  // URL to badge icon
+  pointValue  Int      @default(0) // Points required to earn this badge
+  color       String   @default("#007bff") // Hex color for badge display
+  category    String   // Category like 'sharing', 'reviewing', 'community'
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userBadges  UserBadge[]
+  
+  @@map("badges")
+}
+
+// UserBadge model - junction table for users and their earned badges
+model UserBadge {
+  id        String   @id @default(cuid())
+  earnedAt  DateTime @default(now())
+  
+  // Foreign keys
+  userId    String
+  badgeId   String
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  
+  // Unique constraint - one badge per user (can't earn same badge twice)
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
+
+// Enums
+enum TransactionType {
+  EARNED
+  SPENT
+  BONUS
+  PENALTY
+}
